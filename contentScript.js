@@ -6,19 +6,10 @@ function run(code) {
   const s = document.createElement('script'); s.text = code;
   (document.head || document.documentElement).appendChild(s);
 }
+run(`window.__vsPath = '${chrome.runtime.getURL('node_modules/monaco-editor/dev/vs')}';`);
 
 s.onload = function() {
-  run(`
-require.config({ paths: { 'vs': '${chrome.runtime.getURL('node_modules/monaco-editor/dev/vs')}' }});
-    require(['vs/editor/editor.main'], function() {
-        var editor = monaco.editor.create(document.getElementsByClassName('details')[0], {
-            value: [
-                'function x() {',
-                '\tconsole.log("Hello world!");',
-                '}'
-            ].join('\\n'),
-            language: 'javascript'
-        });
-    });
-`);
+  const index = document.createElement('script');
+  index.src = chrome.runtime.getURL('index.js');
+  (document.head || document.documentElement).appendChild(index);
 };
