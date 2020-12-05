@@ -1,0 +1,22 @@
+{
+  "name": "playgroundize-devtools-protocol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osnr/playgroundize-devtools-protocol.git"
+  },
+  "author": "Omar Rizwan <omar@omar.website>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/osnr/playgroundize-devtools-protocol/issues"
+  },
+  "homepage": "https://github.com/osnr/playgroundize-devtools-protocol#readme",
+  "dependencies": {
+    "monaco-editor": "^0.21.2"
+  }
+}

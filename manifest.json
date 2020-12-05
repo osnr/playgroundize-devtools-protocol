@@ -1,0 +1,16 @@
+{
+  "name": "Playgroundize DevTools Protocol",
+  "version": "1.0",
+  "description": "Turn Chrome DevTools protocol docs into playground",
+  "manifest_version": 2,
+
+  "content_scripts": [
+    {
+      "matches": ["*://chromedevtools.github.io/*"],
+      "run_at": "document_end",
+      "js": ["contentScript.js"]
+    }
+  ],
+
+  "web_accessible_resources": ["node_modules/*"]
+}
