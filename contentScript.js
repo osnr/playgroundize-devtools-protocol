@@ -6,7 +6,7 @@ function run(code) {
   const s = document.createElement('script'); s.text = code;
   (document.head || document.documentElement).appendChild(s);
 }
-run(`window.__vsPath = '${chrome.runtime.getURL('node_modules/monaco-editor/dev/vs')}';`);
+run(`window.__monacoBaseUrl = '${chrome.runtime.getURL('node_modules/monaco-editor/dev')}/';`);
 
 s.onload = function() {
   const index = document.createElement('script');
