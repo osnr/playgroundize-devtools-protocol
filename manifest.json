@@ -12,5 +12,8 @@
     }
   ],
 
-  "web_accessible_resources": ["node_modules/*", "index.js"]
+  "web_accessible_resources": ["node_modules/*", "index.js"],
+
+  "externally_connectable": {"matches": ["*://chromedevtools.github.io/*"]},
+  "background": {"scripts": ["background.js"], "persistent": false}
 }

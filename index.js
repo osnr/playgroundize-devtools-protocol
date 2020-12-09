@@ -18,9 +18,20 @@ window.MonacoEnvironment = {
 
 require(['vs/editor/editor.main'], function() {
   function makeEditor(details) {
+    const parent = document.createElement('div');
+    parent.style.width = '50%';
+    parent.style.float = 'right';
+
+    const run = document.createElement('button');
+    run.innerText = 'Run';
+    parent.appendChild(run);
+
     const container = document.createElement('div');
     container.style.height = '200px';
-    details.appendChild(container);
+    container.style.width = '100%';
+    parent.appendChild(container);
+
+    details.prepend(parent);
 
     var editor = monaco.editor.create(container, {
       value: [
@@ -34,6 +45,9 @@ require(['vs/editor/editor.main'], function() {
     });
     details.addEventListener('keydown', e => {
       e.stopPropagation();
+    });
+    run.addEventListener('click', e => {
+      eval(editor.getValue());
     });
   }
 
