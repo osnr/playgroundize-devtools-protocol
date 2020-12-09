@@ -40,27 +40,38 @@ window.MonacoEnvironment = {
 
 require(['vs/editor/editor.main'], function() {
   function makeEditor(details) {
+    details.style.position = 'relative';
+
     const parent = document.createElement('div');
     parent.style.width = '50%';
-    parent.style.float = 'right';
+    parent.style.position = 'absolute'; parent.style.right = '0px'; parent.style.top = '0px';
 
-    const run = document.createElement('button');
-    run.innerText = 'Run';
-    parent.appendChild(run);
-
+    (function() {
+      const desc = details.getElementsByClassName('details-description')[0];
+      desc.style.width = '50%'; desc.style.display = 'inline-block';
+    })();
+    
     const container = document.createElement('div');
-    container.style.height = '200px';
+    const height = (function() {
+      try { return details.getElementsByClassName('properties-container')[0].offsetTop; }
+      catch (e) { return details.offsetHeight - 5; }
+    })();
+    container.style.height = `${height}px`;
     container.style.width = '100%';
     parent.appendChild(container);
+    
+    const run = document.createElement('button');
+    run.innerText = 'Run';
+    run.style.position = 'absolute'; run.style.right = '0px'; run.style.top = '0px';
+    parent.appendChild(run);
 
     details.prepend(parent);
 
     var editor = monaco.editor.create(container, {
-      value: [
-        'function x() {',
-        '\tconsole.log("Hello world!");',
-        '}'
-      ].join('\n'),
+      value: (function() {
+        const method = details.querySelector("[data-slug]").dataset.slug;
+        return `return await ${method}();`;
+      })(),
       language: 'javascript',
       scrollbar: { handleMouseWheel: false },
       scrollBeyondLastLine: false
