@@ -47,7 +47,7 @@ require(['vs/editor/editor.main'], function() {
       e.stopPropagation();
     });
     run.addEventListener('click', e => {
-      eval(editor.getValue());
+      chrome.runtime.sendMessage(__extensionId, editor.getValue());
     });
   }
 
