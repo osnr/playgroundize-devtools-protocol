@@ -1,3 +1,25 @@
+async function runInBackgroundScript(code) {
+  return new Promise(resolve => {
+    chrome.runtime.sendMessage(__extensionId, code, {}, response => {
+      resolve(response);
+    });
+  });
+}
+
+const indexEl = document.querySelector("[protocol-search-index]");
+window.fetch(indexEl.getAttribute("base-url") + indexEl.getAttribute("protocol-search-index")).then(async r => {
+  const index = await r.text();
+  runInBackgroundScript(`buildWrappersForIndex({tabId: sender.tab.id}, ${index})`);
+});
+
+runInBackgroundScript(`
+  chrome.debugger.detach({tabId: sender.tab.id});
+  chrome.debugger.attach(
+    {tabId: sender.tab.id}, "1.3",
+    function() { if (chrome.runtime.lastError) console.log(chrome.runtime.lastError); }
+  );
+`);
+
 require.config({ paths: { 'vs': __monacoBaseUrl + 'vs' }});
 
 
@@ -46,8 +68,8 @@ require(['vs/editor/editor.main'], function() {
     details.addEventListener('keydown', e => {
       e.stopPropagation();
     });
-    run.addEventListener('click', e => {
-      chrome.runtime.sendMessage(__extensionId, editor.getValue());
+    run.addEventListener('click', async e => {
+      console.log(await runInBackgroundScript(editor.getValue()));
     });
   }
 
