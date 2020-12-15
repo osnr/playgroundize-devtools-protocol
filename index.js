@@ -1,15 +1,29 @@
 async function runInBackgroundScript(code) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(__extensionId, code, {}, response => {
-      resolve(response);
+      if (response.result) resolve(response.result); else reject(response.err);
     });
   });
 }
 
 const indexEl = document.querySelector("[protocol-search-index]");
 window.fetch(indexEl.getAttribute("base-url") + indexEl.getAttribute("protocol-search-index")).then(async r => {
-  const index = await r.text();
-  runInBackgroundScript(`buildWrappersForIndex({tabId: sender.tab.id}, ${index})`);
+  const index = await r.json();
+  for (let method of Object.values(index).map(x => x.keyword).filter(x => x)) {
+    const [domain, methodName] = method.split('.');
+    if (!(window[domain])) { window[domain] = {}; }
+    window[domain][methodName] = async function(args) {
+      return runInBackgroundScript(`
+        return new Promise((resolve, reject) => {
+          chrome.debugger.sendCommand({tabId: sender.tab.id}, "${method}",
+                                      ${JSON.stringify(args || {})}, result => {
+            if (chrome.runtime.lastError) { console.error(chrome.runtime.lastError); reject(chrome.runtime.lastError); }
+            else resolve(result);
+          });
+        });
+      `);
+    }
+  }
 });
 
 runInBackgroundScript(`
@@ -70,17 +84,15 @@ require(['vs/editor/editor.main'], function() {
     var editor = monaco.editor.create(container, {
       value: (function() {
         const method = details.querySelector("[data-slug]").dataset.slug;
-        return `return await ${method}();`;
+        return `return ${method}();`;
       })(),
       language: 'javascript',
       scrollbar: { handleMouseWheel: false },
       scrollBeyondLastLine: false
     });
-    details.addEventListener('keydown', e => {
-      e.stopPropagation();
-    });
+    details.addEventListener('keydown', e => { e.stopPropagation(); });
     run.addEventListener('click', async e => {
-      console.log(await runInBackgroundScript(editor.getValue()));
+      eval(`(async function() { ${editor.getValue()} })`)();
     });
   }
 
