@@ -6,22 +6,47 @@ async function runInBackgroundScript(code) {
   });
 }
 
-const indexEl = document.querySelector("[protocol-search-index]");
-window.fetch(indexEl.getAttribute("base-url") + indexEl.getAttribute("protocol-search-index")).then(async r => {
-  const index = await r.json();
-  for (let method of Object.values(index).map(x => x.keyword).filter(x => x)) {
-    const [domain, methodName] = method.split('.');
+const port = chrome.runtime.connect(__extensionId);
+const handlers = {};
+port.onMessage.addListener(({source, method, params}) => {
+  console.log(source, method, params);
+  (handlers[method] || []).forEach(fn => fn(params));
+});
+
+window.fetch(__protocolUrl).then(async r => {
+  const {domains} = await r.json();
+  for (let {domain, commands, events} of domains) {
     if (!(window[domain])) { window[domain] = {}; }
-    window[domain][methodName] = async function(args) {
-      return runInBackgroundScript(`
+    
+    for (let command of commands) {
+      window[domain][command.name] = async function(args) {
+        return runInBackgroundScript(`
         return new Promise((resolve, reject) => {
-          chrome.debugger.sendCommand({tabId: sender.tab.id}, "${method}",
+          chrome.debugger.sendCommand({tabId: sender.tab.id}, "${domain}.${command.name}",
                                       ${JSON.stringify(args || {})}, result => {
             if (chrome.runtime.lastError) { console.error(chrome.runtime.lastError); reject(chrome.runtime.lastError); }
             else resolve(result);
           });
         });
-      `);
+        `);
+      }
+    }
+
+    if (events) for (let event of events) {
+      const method = `${domain}.${event.name}`;
+
+      window[domain][event.name] = {
+        async on(fn) {
+          handlers[method] = handlers[method] || [];
+          handlers[method].push(fn);
+        },
+        async once(fn) {
+          
+        },
+        async off(fn) {
+
+        },
+      };
     }
   }
 });
@@ -33,68 +58,3 @@ runInBackgroundScript(`
     function() { if (chrome.runtime.lastError) console.log(chrome.runtime.lastError); }
   );
 `);
-
-require.config({ paths: { 'vs': __monacoBaseUrl + 'vs' }});
-
-
-// Before loading vs/editor/editor.main, define a global MonacoEnvironment that overwrites
-// the default worker url location (used when creating WebWorkers). The problem here is that
-// HTML5 does not allow cross-domain web workers, so we need to proxy the instantiation of
-// a web worker through a same-domain script
-window.MonacoEnvironment = {
-  getWorkerUrl: function(workerId, label) {
-    return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-    self.MonacoEnvironment = {
-      baseUrl: '${__monacoBaseUrl}'
-    };
-    importScripts('${__monacoBaseUrl}vs/base/worker/workerMain.js');`
-      )}`;
-  }
-};
-
-require(['vs/editor/editor.main'], function() {
-  function makeEditor(details) {
-    details.style.position = 'relative';
-
-    const parent = document.createElement('div');
-    parent.style.width = '50%';
-    parent.style.position = 'absolute'; parent.style.right = '0px'; parent.style.top = '0px';
-
-    (function() {
-      const desc = details.getElementsByClassName('details-description')[0];
-      desc.style.width = '50%'; desc.style.display = 'inline-block';
-    })();
-    
-    const container = document.createElement('div');
-    const height = (function() {
-      try { return details.getElementsByClassName('properties-container')[0].offsetTop; }
-      catch (e) { return details.offsetHeight - 5; }
-    })();
-    container.style.height = `${height}px`;
-    container.style.width = '100%';
-    parent.appendChild(container);
-    
-    const run = document.createElement('button');
-    run.innerText = 'Run';
-    run.style.position = 'absolute'; run.style.right = '0px'; run.style.top = '0px';
-    parent.appendChild(run);
-
-    details.prepend(parent);
-
-    var editor = monaco.editor.create(container, {
-      value: (function() {
-        const method = details.querySelector("[data-slug]").dataset.slug;
-        return `return ${method}();`;
-      })(),
-      language: 'javascript',
-      scrollbar: { handleMouseWheel: false },
-      scrollBeyondLastLine: false
-    });
-    details.addEventListener('keydown', e => { e.stopPropagation(); });
-    run.addEventListener('click', async e => {
-      eval(`(async function() { ${editor.getValue()} })`)();
-    });
-  }
-
-  [...document.getElementsByClassName('details')].forEach(makeEditor);
-});
