@@ -12,7 +12,7 @@
     }
   ],
 
-  "web_accessible_resources": ["index.js", "vendor/protocol.json"],
+  "web_accessible_resources": ["index.js", "vendor/js_protocol.json", "vendor/browser_protocol.json"],
 
   "externally_connectable": {"matches": ["*://chromedevtools.github.io/*"]},
   "background": {"scripts": ["background.js"], "persistent": false},

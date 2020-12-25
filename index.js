@@ -6,14 +6,14 @@ async function runInBackgroundScript(code) {
   });
 }
 
-const port = chrome.runtime.connect(__extensionId);
-const handlers = {};
+var port = chrome.runtime.connect(__extensionId);
+var handlers = {};
 port.onMessage.addListener(({source, method, params}) => {
   console.log(source, method, params);
   (handlers[method] || []).forEach(fn => fn(params));
 });
 
-window.fetch(__protocolUrl).then(async r => {
+__protocolUrls.forEach(url => window.fetch(url).then(async r => {
   const {domains} = await r.json();
   for (let {domain, commands, events} of domains) {
     if (!(window[domain])) { window[domain] = {}; }
@@ -49,7 +49,7 @@ window.fetch(__protocolUrl).then(async r => {
       };
     }
   }
-});
+}));
 
 runInBackgroundScript(`
   chrome.debugger.detach({tabId: sender.tab.id});

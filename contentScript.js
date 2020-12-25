@@ -10,6 +10,6 @@ async function run(codeOrSrc) {
 
 (async function() {
   await run(` window.__extensionId = '${chrome.runtime.id}'; `);
-  await run(` window.__protocolUrl = '${chrome.runtime.getURL('vendor/protocol.json')}'; `);
+  await run(` window.__protocolUrls = ['${chrome.runtime.getURL('vendor/js_protocol.json')}', '${chrome.runtime.getURL('vendor/browser_protocol.json')}']; `);
   await run({ src: chrome.runtime.getURL('index.js') })
 })();
